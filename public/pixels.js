@@ -7,7 +7,7 @@ const PIXEL = 6;
 const PARMIS = {
   naam: 'Parmis',
   palet: {
-    K: '#2a1d17', H: '#2b1b14', h: '#4a3226', S: '#c69468', R: '#d98b7a',
+    K: '#2a1d17', H: '#2b1b14', h: '#4a3226', S: '#e6c7a0', R: '#eba194',
     E: '#1f140f', M: '#9c4a3c', D: '#b8456a', d: '#933556',
   },
   rijen: [
