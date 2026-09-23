@@ -44,7 +44,7 @@ export async function analyseerParmis(_casus, { signal, meld, modus = 'demo' }) 
     factoren: [
       { factor: 'Glimlach', richting: 'verhogend', toelichting: 'Aantoonbaar, herhaaldelijk en met grote precisie ingezet.' },
       { factor: 'Lach die de hele kamer vult', richting: 'verhogend', toelichting: 'Ook op afstand waarneembaar. Bewijs ten overvloede.' },
-      { factor: 'Gewoon zichzelf zijn', richting: 'verhogend', toelichting: 'Weegt volgens vaste rechtspraak het zwaarst.' },
+      { factor: 'Veroordeeld wegens nooit haar theetjes opdrinken', richting: 'verhogend', toelichting: 'Het Hof trof in het dossier talloze halfvolle, koud geworden kopjes thee aan. Bewezen verklaard.' },
       { factor: 'Verzachtende omstandigheden', richting: 'neutraal', toelichting: 'Niet gevonden. Het Hof heeft goed gezocht.' },
     ],
     partijen: [
