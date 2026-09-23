@@ -1,5 +1,6 @@
 import { toonScore, toonGeenScore } from './dial.js';
 import { VOORBEELDEN } from './voorbeelden.js';
+import { tekenPixelDuo } from './pixels.js';
 
 const form = document.getElementById('casus-form');
 const invoer = document.getElementById('casus');
@@ -296,6 +297,7 @@ function toonResultaat(r) {
 
   const blad = el('article', { class: r.easteregg ? 'blad blad--hart' : 'blad' });
 
+  if (r.easteregg) blad.append(tekenPixelDuo());
   blad.append(bronWaarschuwing(r));
 
   if (r.status === 'geen_bronnen') {

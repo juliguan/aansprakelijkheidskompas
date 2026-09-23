@@ -15,7 +15,7 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lees = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 const ENGINE = ['server/bronnen.js', 'server/demo/dataset.js', 'server/demo/regels.js', 'server/easteregg.js', 'server/demo/demo.js'];
-const UI = ['public/voorbeelden.js', 'public/dial.js', 'public/app.js'];
+const UI = ['public/voorbeelden.js', 'public/dial.js', 'public/pixels.js', 'public/app.js'];
 
 function zonderModules(bron, bestand) {
   return `// ── ${bestand} ──\n` + bron
