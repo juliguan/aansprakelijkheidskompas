@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aansprakelijkheidskompas</title>
+  <meta name="description" content="Educatieve eerste inschatting van aansprakelijkheid bij schade door AI en algoritmen, met live gezochte rechtspraak en wetgeving.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="disclaimer-balk" role="note">
+    <strong>Geen juridisch advies.</strong>
+    Dit is een educatieve eerste inschatting, gemaakt door AI. Verwijzingen naar rechtspraak en wetgeving kunnen onjuist of zelfs verzonnen zijn, ook als er live is gezocht. Controleer elke bron zelf en raadpleeg bij een echte zaak een advocaat of het Juridisch Loket.
+  </div>
+
+  <header class="kop">
+    <div class="kop__regel">
+      <p class="kop__rubriek">Dossier · Schade door AI en algoritmen</p>
+      <p class="modus" id="modus" hidden></p>
+    </div>
+    <h1>Aansprakelijkheidskompas</h1>
+    <p class="kop__intro">Beschrijf een casus of een denkbeeldig scenario. De tool zoekt relevante Nederlandse en Europese rechtspraak en wetgeving erbij en geeft een eerste inschatting van waar de aansprakelijkheid waarschijnlijk ligt. <span id="intro-modus"></span></p>
+  </header>
+
+  <main class="indeling">
+    <section class="paneel invoer" aria-labelledby="invoer-titel">
+      <h2 id="invoer-titel"><span class="paneel__nr">I</span> De casus</h2>
+      <form id="casus-form" novalidate>
+        <label for="casus" class="veldlabel">Wat is er gebeurd?</label>
+        <p class="hint" id="casus-hint">
+          <strong>Hoe gedetailleerder, hoe beter.</strong>
+          Noem bijvoorbeeld wie het systeem gebruikt en wie het heeft gemaakt, wat het systeem besliste of deed, welke schade er is ontstaan, of er een mens meekeek, en wanneer het gebeurde.
+        </p>
+        <textarea id="casus" name="casus" rows="11" maxlength="6000" aria-describedby="casus-hint casus-teller"
+          placeholder="Bijvoorbeeld: mijn zorgverzekeraar wees een vergoeding automatisch af op basis van een risicoscore…"></textarea>
+        <div class="veldvoet">
+          <div class="voorbeelden" id="voorbeelden">
+            <span class="voorbeelden__label">Voorbeeld laden:</span>
+          </div>
+          <span class="teller" id="casus-teller"><span id="teller">0</span> / 6000</span>
+        </div>
+        <p class="veldfout" id="veldfout" role="alert" hidden></p>
+        <div class="acties">
+          <button type="submit" class="knop knop--primair" id="knop-analyse">Analyseer casus</button>
+          <button type="button" class="knop knop--stil" id="knop-annuleer" hidden>Annuleren</button>
+        </div>
+      </form>
+
+      <div class="voortgang" id="voortgang" hidden>
+        <p class="voortgang__kop">
+          <span id="voortgang-kop">Onderzoek loopt</span>
+          <span class="voortgang__tijd" id="verstreken">0 s</span>
+        </p>
+        <p class="voortgang__uitleg" id="voortgang-uitleg">Het model zoekt live naar rechtspraak en wetgeving. Dat duurt meestal 20 tot 60 seconden.</p>
+        <ol class="voortgang__lijst" id="voortgang-lijst" aria-live="polite"></ol>
+      </div>
+    </section>
+
+    <section class="paneel meter" aria-labelledby="meter-titel">
+      <h2 id="meter-titel"><span class="paneel__nr">II</span> Inschatting</h2>
+
+      <div class="meter__schijf" id="schijf" data-toestand="leeg">
+        <svg viewBox="0 0 400 236" role="img" aria-labelledby="schijf-label" id="schijf-svg">
+          <title id="schijf-label">Aansprakelijkheidsmeter: nog geen analyse</title>
+          <defs>
+            <linearGradient id="schaal-kleur" gradientUnits="userSpaceOnUse" x1="40" y1="0" x2="360" y2="0">
+              <stop offset="0" style="stop-color: var(--schaal-groen)"/>
+              <stop offset="0.38" style="stop-color: var(--schaal-geel)"/>
+              <stop offset="0.62" style="stop-color: var(--schaal-oranje)"/>
+              <stop offset="1" style="stop-color: var(--schaal-rood)"/>
+            </linearGradient>
+          </defs>
+          <path class="schijf__rand" d="M 22 208 A 178 178 0 0 1 378 208"/>
+          <path class="schijf__boog" d="M 44 208 A 156 156 0 0 1 356 208" stroke="url(#schaal-kleur)"/>
+          <g id="streepjes" class="schijf__streepjes"></g>
+          <g id="wijzer" class="schijf__wijzer">
+            <path d="M 200 64 L 205.5 200 L 194.5 200 Z" class="wijzer__naald"/>
+            <path d="M 194.5 216 L 205.5 216 L 203 232 L 197 232 Z" class="wijzer__staart"/>
+          </g>
+          <circle cx="200" cy="208" r="13" class="wijzer__as"/>
+          <circle cx="200" cy="208" r="4.5" class="wijzer__as-kern"/>
+        </svg>
+        <div class="schijf__uiteinden" aria-hidden="true">
+          <span>geen basis</span>
+          <span>sterke aanwijzing</span>
+        </div>
+      </div>
+
+      <div class="uitlezing" aria-live="polite">
+        <p class="uitlezing__getal"><span id="score-getal">–</span><span class="uitlezing__max">/100</span></p>
+        <p class="uitlezing__kwalificatie" id="kwalificatie">Nog geen analyse</p>
+      </div>
+      <p class="meter__samenvatting" id="samenvatting"></p>
+      <p class="meter__uitleg">De schaal geeft aan hoe sterk de juridische basis is om ten minste één partij aansprakelijk te houden, gezien vanuit wie de schade lijdt. Het is geen kans op winst in een rechtszaak.</p>
+    </section>
+  </main>
+
+  <section class="uitkomst" id="uitkomst" hidden aria-live="polite"></section>
+
+  <footer class="voet">
+    <p>Aansprakelijkheidskompas · educatief prototype · <span id="voet-modus">demomodus: vaste regels en een gecontroleerde dataset</span>.</p>
+    <p>Hulp bij een echte zaak: <a href="https://www.juridischloket.nl" target="_blank" rel="noopener">Juridisch Loket</a> · <a href="https://www.advocatenorde.nl/vind-een-advocaat" target="_blank" rel="noopener">Vind een advocaat</a></p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
