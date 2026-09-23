@@ -6,11 +6,25 @@ import Anthropic from '@anthropic-ai/sdk';
 import { analyseerCasus, AnalyseFout } from './analyse.js';
 import { analyseerDemo } from './demo/demo.js';
 import { bevatParmis, analyseerParmis } from './easteregg.js';
+import { RECHTSGEBIEDEN, INSTANTIES } from './officieel/rechtspraak.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
 const MAX_TEKENS = 6000;
-const TIMEOUT_MS = 180_000;
+// Live research reads several rulings, so allow more time than a single call.
+const TIMEOUT_MS = 240_000;
+const HUIDIG_JAAR = new Date().getFullYear();
+
+// Only accept filter values we know; anything else is silently dropped.
+function leesFilters(ruw) {
+  const f = ruw && typeof ruw === 'object' ? ruw : {};
+  const jaar = Number.parseInt(f.vanafJaar, 10);
+  return {
+    rechtsgebied: RECHTSGEBIEDEN[f.rechtsgebied] ? f.rechtsgebied : undefined,
+    instantie: INSTANTIES[f.instantie] ? f.instantie : undefined,
+    vanafJaar: jaar >= 1950 && jaar <= HUIDIG_JAAR ? jaar : undefined,
+  };
+}
 
 // "demo" (default, no API calls) or "api" (live analysis with Claude).
 // A --modus=... flag (used by `npm run demo` / `npm run live`) wins over MODUS in .env.
@@ -29,7 +43,12 @@ app.use(express.json({ limit: '64kb' }));
 app.use(express.static(path.join(here, '..', 'public')));
 
 app.get('/api/status', (_req, res) => {
-  res.json({ modus: MODUS, sleutelAanwezig: Boolean(process.env.ANTHROPIC_API_KEY) });
+  const opties = (lijst) => Object.entries(lijst).map(([waarde, { label }]) => ({ waarde, label }));
+  res.json({
+    modus: MODUS,
+    sleutelAanwezig: Boolean(process.env.ANTHROPIC_API_KEY),
+    filters: { rechtsgebieden: opties(RECHTSGEBIEDEN), instanties: opties(INSTANTIES) },
+  });
 });
 
 // The response is a Server-Sent Events stream so the UI can show the searches
@@ -84,6 +103,7 @@ app.post('/api/analyse', async (req, res) => {
       signal: controller.signal,
       meld: (event) => stuur(event.type, event),
       modus: MODUS,
+      filters: leesFilters(req.body?.filters),
     });
     stuur('resultaat', resultaat);
   } catch (err) {
@@ -105,7 +125,7 @@ function vertaalFout(err, timeout) {
     return {
       code: 'timeout',
       titel: 'Het onderzoek duurde te lang',
-      bericht: 'Er kwam binnen drie minuten geen antwoord. Probeer het opnieuw, eventueel met een kortere of preciezere casus.',
+      bericht: 'Er kwam binnen vier minuten geen antwoord. Probeer het opnieuw, eventueel met een kortere of preciezere casus.',
     };
   }
   if (err instanceof AnalyseFout) {

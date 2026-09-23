@@ -2,11 +2,17 @@ import Anthropic from '@anthropic-ai/sdk';
 import { SYSTEEMPROMPT, HERSTELPROMPT, maakGebruikersbericht } from './prompt.js';
 import { haalJsonUitTekst, valideerAntwoord } from './schema.js';
 import { Zoekbewijs, verrijkBronnen, kwalificatieVoorScore } from './bronnen.js';
+import { TOOLS, voerToolUit } from './officieel/tools.js';
 
 const MODEL = 'claude-sonnet-5';
-const MAX_ZOEKOPDRACHTEN = 5;
-// A long server-tool turn can stop with pause_turn; we resume it at most this often.
-const MAX_HERVATTINGEN = 3;
+// Web search is secondary (EU law, regulators); Dutch law comes from the official tools.
+const MAX_WEBZOEKOPDRACHTEN = 3;
+const WEB_DOMEINEN = [
+  'eur-lex.europa.eu', 'curia.europa.eu', 'rechtspraak.nl', 'overheid.nl', 'raadvanstate.nl',
+  'mensenrechten.nl', 'autoriteitpersoonsgegevens.nl', 'hudoc.echr.coe.int', 'rijksoverheid.nl',
+];
+// Model turns per analysis (each tool round or pause_turn resume is one turn).
+const MAX_BEURTEN = 12;
 
 export class AnalyseFout extends Error {
   constructor(code, message, detail) {
@@ -27,24 +33,36 @@ function getClient() {
  *   { type: 'fase', fase: 'overwegen' | 'schrijven' }
  *   { type: 'zoek', query }
  *   { type: 'gevonden', aantal, domeinen }
- *   { type: 'zoekfout', code }
+ *   { type: 'lees', tekst }
+ *   { type: 'zoekfout', code, bericht? }
+ * `filters` ({ rechtsgebied, instantie, vanafJaar }) come from the user and are
+ * enforced on every rechtspraak.nl search.
  */
-export async function analyseerCasus(casus, { signal, meld }) {
+export async function analyseerCasus(casus, { signal, meld, filters = {} }) {
   const start = Date.now();
   const datum = new Date().toISOString().slice(0, 10);
   const bewijs = new Zoekbewijs();
-  const messages = [{ role: 'user', content: maakGebruikersbericht(casus, datum) }];
+  const messages = [{ role: 'user', content: maakGebruikersbericht(casus, datum, filters) }];
+  const tools = [
+    ...TOOLS,
+    { type: 'web_search_20260209', name: 'web_search', max_uses: MAX_WEBZOEKOPDRACHTEN, allowed_domains: WEB_DOMEINEN },
+  ];
   let zoekopdrachten = 0;
   let final;
 
-  for (let beurt = 0; beurt <= MAX_HERVATTINGEN; beurt++) {
+  for (let beurt = 0; beurt < MAX_BEURTEN; beurt++) {
+    const laatsteBeurt = beurt === MAX_BEURTEN - 1;
     const stream = getClient().messages.stream(
       {
         model: MODEL,
         max_tokens: 16000,
         thinking: { type: 'adaptive' },
+        // Each research turn resends the conversation; caching the prefix keeps that cheap.
+        cache_control: { type: 'ephemeral' },
         system: SYSTEEMPROMPT,
-        tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: MAX_ZOEKOPDRACHTEN }],
+        tools,
+        // On the last turn, force a written answer instead of more research.
+        ...(laatsteBeurt ? { tool_choice: { type: 'none' } } : {}),
         messages,
       },
       { signal },
@@ -85,13 +103,33 @@ export async function analyseerCasus(casus, { signal, meld }) {
       messages.push({ role: 'assistant', content: final.content });
       continue;
     }
+
+    if (final.stop_reason === 'tool_use') {
+      const aanroepen = final.content.filter((b) => b.type === 'tool_use');
+      messages.push({ role: 'assistant', content: final.content });
+      // All results go back in one user message, as the API expects.
+      const resultaten = await Promise.all(
+        aanroepen.map(async (aanroep) => {
+          zoekopdrachten++;
+          const { inhoud, isFout } = await voerToolUit(aanroep.name, aanroep.input, { filters, bewijs, meld, signal });
+          return {
+            type: 'tool_result',
+            tool_use_id: aanroep.id,
+            content: typeof inhoud === 'string' ? inhoud : JSON.stringify(inhoud),
+            ...(isFout ? { is_error: true } : {}),
+          };
+        }),
+      );
+      messages.push({ role: 'user', content: resultaten });
+      continue;
+    }
     break;
   }
 
   if (final.stop_reason === 'refusal') {
     throw new AnalyseFout('geweigerd', 'Het model heeft deze casus niet in behandeling genomen.');
   }
-  if (final.stop_reason === 'pause_turn') {
+  if (final.stop_reason === 'pause_turn' || final.stop_reason === 'tool_use') {
     throw new AnalyseFout('onvolledig', 'Het onderzoek werd niet binnen de beschikbare stappen afgerond.');
   }
 
@@ -201,6 +239,7 @@ function bouwResultaat(antwoord, bewijs, meta) {
       totaal: bronnen.length,
       teruggevonden,
       niet_teruggevonden: bronnen.length - teruggevonden,
+      officieel: bronnen.filter((b) => ['gelezen', 'gevonden', 'wettekst'].includes(b.verificatie)).length,
     },
     meta,
   };

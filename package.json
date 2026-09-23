@@ -10,6 +10,7 @@
     "live": "node server/index.js --modus=api",
     "dev": "node --watch server/index.js",
     "check": "node scripts/check-demo.js",
+    "check:bronnen": "node scripts/check-bronnen.js",
     "bouw:standalone": "node scripts/bouw-standalone.js"
   },
   "engines": {

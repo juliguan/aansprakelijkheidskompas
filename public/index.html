@@ -42,6 +42,31 @@
           </div>
           <span class="teller" id="casus-teller"><span id="teller">0</span> / 6000</span>
         </div>
+        <details class="filters" id="filters" hidden>
+          <summary>Zoekfilters voor de rechtspraak <span class="filters__stand" id="filters-stand">geen filters</span></summary>
+          <p class="hint">Beperk het zoeken in rechtspraak.nl. Laat leeg voor het breedste resultaat.</p>
+          <div class="filters__rij">
+            <label class="filter">
+              <span>Rechtsgebied</span>
+              <select id="filter-rechtsgebied"><option value="">Alle rechtsgebieden</option></select>
+            </label>
+            <label class="filter">
+              <span>Instantie</span>
+              <select id="filter-instantie"><option value="">Alle instanties</option></select>
+            </label>
+            <label class="filter">
+              <span>Uitspraken vanaf</span>
+              <select id="filter-jaar">
+                <option value="">Elk jaar</option>
+                <option value="2024">2024</option>
+                <option value="2020">2020</option>
+                <option value="2015">2015</option>
+                <option value="2010">2010</option>
+                <option value="2000">2000</option>
+              </select>
+            </label>
+          </div>
+        </details>
         <p class="veldfout" id="veldfout" role="alert" hidden></p>
         <div class="acties">
           <button type="submit" class="knop knop--primair" id="knop-analyse">Analyseer casus</button>

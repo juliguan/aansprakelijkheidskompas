@@ -25,11 +25,43 @@ function veiligeUrl(url) {
   }
 }
 
-// Collects everything the web search actually returned, across all turns.
+// Collects everything the searches actually returned, across all turns:
+// web search results plus what came from rechtspraak.nl and wetten.overheid.nl.
 export class Zoekbewijs {
   constructor() {
     this.urls = new Set();
     this.fragmenten = [];
+    this.officieleUitspraken = new Map(); // ECLI -> 'gevonden' | 'gelezen'
+    this.wetsartikelen = []; // { regeling, bwb_id, artikel, url, aliassen }
+  }
+
+  voegOfficieleUitspraakToe(ecli, niveau) {
+    const k = String(ecli).toUpperCase();
+    if (this.officieleUitspraken.get(k) !== 'gelezen') this.officieleUitspraken.set(k, niveau);
+    this.fragmenten.push(k);
+  }
+
+  voegWetsartikelToe(artikel) {
+    this.wetsartikelen.push(artikel);
+    const genormaliseerd = normaliseerUrl(artikel.url);
+    if (genormaliseerd) this.urls.add(genormaliseerd);
+  }
+
+  // Did the model cite an article that was actually retrieved? Matches on the
+  // exact URL, or on the article number plus the name of the regulation.
+  wetsartikelOpgehaald(bron, url) {
+    const genormaliseerd = url && normaliseerUrl(url);
+    const kenmerk = `${bron.kenmerk ?? ''} ${bron.titel ?? ''} ${bron.instantie ?? ''}`.toLowerCase();
+    return this.wetsartikelen.some((a) => {
+      if (genormaliseerd && normaliseerUrl(a.url) === genormaliseerd) return true;
+      const boek = a.regeling.match(/^Burgerlijk Wetboek Boek (\d)$/)?.[1];
+      const nr = a.artikel.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (boek) return new RegExp(`\\b${boek}\\s*:\\s*${nr}\\b`).test(kenmerk) && /\bbw\b|burgerlijk wetboek/.test(kenmerk);
+      const naamGenoemd = [a.regeling.toLowerCase(), ...(a.aliassen ?? [])].some((n) =>
+        new RegExp(`(^|[^a-z])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^a-z])`).test(kenmerk),
+      );
+      return naamGenoemd && new RegExp(`(^|[^\\d:])${nr}(?![\\d:])`).test(kenmerk);
+    });
   }
 
   voegResultaatToe({ url, title }) {
@@ -95,11 +127,20 @@ export function verrijkBronnen(bronnen, bewijs) {
     const sleutels = sleutelsVoorKenmerk(bron.kenmerk);
     const kenmerkGevonden = sleutels.length > 0 && sleutels.some((s) => hooiberg.includes(s));
     const isEcli = bron.kenmerk?.toUpperCase().startsWith('ECLI');
+    const ecli = isEcli ? bron.kenmerk.toUpperCase().replace(/\s+/g, '') : null;
+
+    // Strongest evidence first: read in full > found on rechtspraak.nl > law
+    // text retrieved > merely present in web search results.
+    let verificatie = null;
+    if (ecli && bewijs.officieleUitspraken.has(ecli)) verificatie = bewijs.officieleUitspraken.get(ecli);
+    else if (bron.soort === 'wetgeving' && bewijs.wetsartikelOpgehaald(bron, url)) verificatie = 'wettekst';
+    else if (urlGevonden || kenmerkGevonden) verificatie = 'zoekresultaat';
 
     return {
       ...bron,
       url,
-      teruggevonden: urlGevonden || kenmerkGevonden,
+      teruggevonden: verificatie !== null,
+      verificatie,
       ecli_formaat_ongeldig: isEcli ? !ECLI_RE.test(bron.kenmerk.toUpperCase().replace(/\s+/g, '')) : false,
       controle: controleLink(bron),
     };

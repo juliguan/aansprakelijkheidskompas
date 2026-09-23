@@ -6,11 +6,12 @@ De tool heeft twee modi:
 
 | | **Demomodus** (standaard) | **Live modus** |
 |---|---|---|
-| Hoe | Vaste trefwoordregels en een gecontroleerde dataset van echte uitspraken en wetgeving | Claude (`claude-sonnet-5`) zoekt live naar rechtspraak en wetgeving |
-| Kosten | Gratis, geen API-sleutel nodig | API-tegoed, ongeveer €0,10 tot €0,25 per analyse |
-| Snelheid | Een paar seconden | 20 tot 60 seconden |
-| Casussen | AI-thema's en veelvoorkomende alledaagse zaken die de regels kennen | Elke casus, met uitleg op maat |
-| Bronnen | Handmatig gecontroleerd, altijd echt | Automatisch gecontroleerd tegen de zoekresultaten; kan fouten bevatten |
+| Hoe | Vaste trefwoordregels en een gecontroleerde dataset van echte uitspraken en wetgeving | Claude (`claude-sonnet-5`) doorzoekt de officiële databases van **rechtspraak.nl** en **wetten.overheid.nl**, leest de relevantste uitspraken en gebruikt web search alleen voor Europees recht |
+| Kosten | Gratis, geen API-sleutel nodig | API-tegoed, ongeveer €0,20 tot €0,50 per analyse |
+| Snelheid | Een paar seconden | 30 tot 90 seconden |
+| Casussen | AI-thema's en veelvoorkomende alledaagse zaken die de regels kennen | Elke casus, met uitleg op maat en echte Nederlandse vergelijkbare zaken |
+| Zoekfilters | – | Rechtsgebied, instantie (Hoge Raad, hof, rechtbank, Raad van State, CRvB, CBb) en periode |
+| Bronnen | Handmatig gecontroleerd, altijd echt | Per bron zichtbaar of hij rechtstreeks uit rechtspraak.nl of wetten.overheid.nl komt |
 
 > **Dit is geen juridisch advies.** De tool is bedoeld om te leren, te verkennen en het gesprek te starten, niet om beslissingen op te baseren. Lees de sectie [Beperkingen](#beperkingen).
 
@@ -79,10 +80,25 @@ Start daarna met `npm start`. Een commando (`npm run demo` of `npm run live`) ga
 
 ### Live modus
 
-1. De server stuurt de casus naar `claude-sonnet-5` met de **web search tool** (maximaal 5 zoekopdrachten).
-2. Het model benoemt de factoren, zoekt rechtspraak en wetgeving en geeft een score. Tijdens het zoeken zie je live welke zoekopdrachten er worden gedaan.
-3. De server **controleert elke genoemde bron**: kwam de URL of het kenmerk (ECLI-nummer, zaaknummer, richtlijnnummer) echt voor in de zoekresultaten? Zo niet, dan krijgt de bron een rood label. Voor ECLI-nummers en EU-regelgeving maakt de server een eigen controlelink naar rechtspraak.nl of EUR-Lex.
-4. Het model beslist zelf of de invoer een casus is. Onzin krijgt geen score; een korte maar zinnige casus wel.
+1. De server stuurt de casus naar `claude-sonnet-5`. Het model krijgt drie eigen hulpmiddelen die de server uitvoert op officiële bronnen:
+   - **`zoek_uitspraken`**: zoekt in alle gepubliceerde Nederlandse uitspraken op rechtspraak.nl, met filters op rechtsgebied, instantie en jaar.
+   - **`haal_uitspraak`**: haalt de officiële tekst van een uitspraak op via de [open data van rechtspraak.nl](https://www.rechtspraak.nl/Uitspraken/paginas/open-data.aspx), zodat het model leest wat de rechter echt besliste.
+   - **`haal_wetsartikel`**: haalt de actuele tekst van een wetsartikel op uit het Basiswettenbestand (wetten.overheid.nl), inclusief een directe link.
+
+   Daarnaast mag het model maximaal 3 keer web search gebruiken, beperkt tot officiële domeinen (EUR-Lex, Curia, overheid.nl, toezichthouders), vooral voor Europees recht.
+2. **De zoekfilters van de gebruiker worden door de server afgedwongen**: ook als het model zelf iets anders vraagt, zoekt de server alleen binnen het gekozen rechtsgebied, de gekozen instantie en de gekozen periode.
+3. Tijdens het onderzoek zie je live welke zoekopdrachten er worden gedaan en welke uitspraken en artikelen het model leest.
+4. De server **controleert elke genoemde bron** en geeft een label:
+   - *Gelezen via rechtspraak.nl*: de volledige tekst is opgehaald en gelezen.
+   - *Gevonden op rechtspraak.nl*: de uitspraak stond in de officiële zoekresultaten.
+   - *Wettekst van wetten.overheid.nl*: het artikel is opgehaald.
+   - *Teruggevonden in zoekresultaten*: alleen gezien via web search.
+   - *Niet teruggevonden* (rood): nergens in het onderzoek aangetroffen.
+
+   Een verzonnen ECLI-nummer valt zo meteen op: rechtspraak.nl kent het niet.
+5. Het model beslist zelf of de invoer een casus is. Onzin krijgt geen score; een korte maar zinnige casus wel.
+
+> De zoekfunctie gebruikt het zoek-endpoint achter uitspraken.rechtspraak.nl. Dat is niet officieel gedocumenteerd en kan dus veranderen. `npm run check:bronnen` test in een paar seconden (gratis) of alle koppelingen nog werken.
 
 ### De score
 
@@ -102,7 +118,13 @@ De score geeft aan hoe sterk de juridische basis is om ten minste één partij a
 npm run check
 ```
 
-Dit draait de testscenario's (drie AI-casussen, drie alledaagse casussen en de randgevallen) door de demomodus en controleert status en score. Er is geen API-sleutel voor nodig. Hoe je de live modus test, staat in [testscenarios.md](testscenarios.md).
+Dit draait de testscenario's (drie AI-casussen, drie alledaagse casussen en de randgevallen) door de demomodus en controleert status en score. Er is geen API-sleutel voor nodig.
+
+```bash
+npm run check:bronnen
+```
+
+Dit test de koppelingen met rechtspraak.nl en wetten.overheid.nl: zoeken met filters, een uitspraak ophalen, een verzonnen ECLI weigeren en zeven wetsartikelen ophalen. Er is een internetverbinding voor nodig, maar geen API-sleutel. Hoe je de live modus zelf test, staat in [testscenarios.md](testscenarios.md).
 
 ## Demo als losse pagina
 
@@ -117,10 +139,15 @@ Dit maakt `standalone/aansprakelijkheidskompas.html`: de volledige demomodus in 
 ```
 server/
   index.js          Express-server: modus kiezen, POST /api/analyse (Server-Sent Events), GET /api/status
-  analyse.js        live modus: Claude-aanroep met web search, voortgang, herstelpoging bij ongeldige JSON
+  analyse.js        live modus: onderzoekslus met Claude, tools en web search; herstelpoging bij ongeldige JSON
   prompt.js         systeemprompt en JSON-contract voor de live modus
   schema.js         validatie van het modelantwoord (zod)
-  bronnen.js        bronnen controleren tegen zoekresultaten, controlelinks, kwalificatie per score
+  bronnen.js        bronnen controleren tegen wat er echt is opgehaald, controlelinks, kwalificatie per score
+  officieel/
+    rechtspraak.js  zoeken in en ophalen van uitspraken op rechtspraak.nl
+    wetten.js       actuele wetsartikelen van wetten.overheid.nl
+    tools.js        de tools voor Claude, inclusief het afdwingen van de zoekfilters
+    tekst.js        XML naar leesbare tekst
   demo/
     demo.js         demomodus: regelgebaseerde analyse in hetzelfde uitvoerformaat
     regels.js       thema's, signalen en gewichten
@@ -193,10 +220,10 @@ Beide modi geven hetzelfde formaat terug. Tijdens het onderzoek stuurt het endpo
 
 **Live modus: AI-jurisprudentieonderzoek vereist altijd verificatie**
 
-- **Verwijzingen kunnen verzonnen zijn.** Taalmodellen "hallucineren": ze kunnen ECLI-nummers, datums of complete uitspraken bedenken die er overtuigend uitzien. Web search maakt dat minder waarschijnlijk, maar sluit het niet uit. Ook een echte uitspraak kan verkeerd worden samengevat.
-- **"Teruggevonden in zoekresultaten" is geen garantie.** Het betekent alleen dat de URL of het kenmerk in de zoekresultaten stond. Omgekeerd kan een bron met een rood label best kloppen, zoals een wetsartikel dat het model uit eigen kennis noemt.
-- **Verifieer elke bron** op [rechtspraak.nl](https://uitspraken.rechtspraak.nl) of [EUR-Lex](https://eur-lex.europa.eu) voordat je hem gebruikt.
-- **Zoekbereik.** Maximaal 5 zoekopdrachten; niet-gepubliceerde uitspraken en betaalde databanken ontbreken.
+- **Verwijzingen kunnen nog steeds fout zijn.** Doordat het model in de officiële databases zoekt, is een verzonnen ECLI-nummer zo goed als uitgesloten. Maar het model kan een echte uitspraak nog steeds **verkeerd samenvatten** of toepassen op een casus waar hij niet echt bij past. Een label als "Gelezen via rechtspraak.nl" betekent dat de bron bestaat en is gelezen, niet dat de uitleg klopt.
+- **Rode labels.** Een bron zonder groen label is nergens in het onderzoek aangetroffen. Die kan best kloppen (bijvoorbeeld een bekend artikel dat het model uit eigen kennis noemt), maar controleer hem extra goed.
+- **Verifieer elke bron** op [rechtspraak.nl](https://uitspraken.rechtspraak.nl), [wetten.overheid.nl](https://wetten.overheid.nl) of [EUR-Lex](https://eur-lex.europa.eu) voordat je hem gebruikt.
+- **Zoekbereik.** Alleen gepubliceerde uitspraken; rechtspraak.nl publiceert maar een deel van alle uitspraken. Betaalde databanken en literatuur ontbreken. De periodefilter wordt toegepast op de beste 50 resultaten per zoekopdracht.
 
 Hulp nodig bij een echte zaak? Neem contact op met het [Juridisch Loket](https://www.juridischloket.nl) of een advocaat.
 

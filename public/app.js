@@ -33,21 +33,23 @@ const MODUS_TEKST = {
     intro: 'In de demomodus gebeurt dat met vaste regels en een gecontroleerde dataset, zonder AI. Hij kent AI-zaken en veelvoorkomende alledaagse zaken, zoals diefstal, verkeersongevallen, hondenbeten en kapotte aankopen.',
   },
   api: {
-    badge: ['Live modus', 'Claude + web search'],
-    voet: 'live modus: analyses via de Claude API (claude-sonnet-5) met web search',
-    uitleg: 'Het model zoekt live naar rechtspraak en wetgeving. Dat duurt meestal 20 tot 60 seconden.',
-    intro: 'In de live modus zoekt een AI-model (Claude) daarvoor op internet.',
+    badge: ['Live modus', 'Claude + rechtspraak.nl'],
+    voet: 'live modus: analyses via de Claude API (claude-sonnet-5) met rechtspraak.nl, wetten.overheid.nl en web search',
+    uitleg: 'Claude doorzoekt rechtspraak.nl en wetten.overheid.nl en leest de relevantste uitspraken. Dat duurt meestal 30 tot 90 seconden.',
+    intro: 'In de live modus doorzoekt een AI-model (Claude) daarvoor de officiële databases van rechtspraak.nl en wetten.overheid.nl.',
   },
 };
 
 async function laadModus() {
   try {
     let modus = 'demo';
+    let filterOpties = null;
     if (!LOKALE_ENGINE) {
       const res = await fetch('/api/status');
       if (!res.ok) return;
-      ({ modus } = await res.json());
+      ({ modus, filters: filterOpties } = await res.json());
     }
+    if (modus === 'api' && filterOpties) toonFilters(filterOpties);
     const t = MODUS_TEKST[modus];
     if (!t) return;
     const badge = document.getElementById('modus');
@@ -62,6 +64,32 @@ async function laadModus() {
   }
 }
 laadModus();
+
+// ── Search filters (live mode only) ──
+
+const filterVelden = {
+  rechtsgebied: document.getElementById('filter-rechtsgebied'),
+  instantie: document.getElementById('filter-instantie'),
+  vanafJaar: document.getElementById('filter-jaar'),
+};
+
+function toonFilters({ rechtsgebieden, instanties }) {
+  for (const { waarde, label } of rechtsgebieden) filterVelden.rechtsgebied.append(el('option', { value: waarde }, label));
+  for (const { waarde, label } of instanties) filterVelden.instantie.append(el('option', { value: waarde }, label));
+  for (const veld of Object.values(filterVelden)) veld.addEventListener('change', werkFilterStandBij);
+  document.getElementById('filters').hidden = false;
+}
+
+function gekozenFilters() {
+  return Object.fromEntries(Object.entries(filterVelden).map(([k, veld]) => [k, veld.value || undefined]));
+}
+
+function werkFilterStandBij() {
+  const gekozen = Object.values(filterVelden)
+    .filter((veld) => veld.value)
+    .map((veld) => veld.selectedOptions[0].textContent);
+  document.getElementById('filters-stand').textContent = gekozen.length ? gekozen.join(' · ') : 'geen filters';
+}
 
 // ── Small DOM helper: text is always set via textContent, never innerHTML ──
 
@@ -168,8 +196,10 @@ function verwerkVoortgang(type, data) {
   } else if (type === 'gevonden') {
     const domeinen = data.domeinen?.length ? el('span', { class: 'klein' }, ` (${data.domeinen.join(', ')})`) : null;
     stap([`${data.aantal} ${data.aantal === 1 ? 'resultaat' : 'resultaten'} gevonden`, domeinen], 'klaar');
+  } else if (type === 'lees') {
+    stap(data.tekst, 'klaar');
   } else if (type === 'zoekfout') {
-    const reden = data.code === 'max_uses_exceeded' ? 'maximum aantal zoekopdrachten bereikt' : 'een zoekopdracht mislukte';
+    const reden = data.bericht ?? (data.code === 'max_uses_exceeded' ? 'maximum aantal zoekopdrachten bereikt' : 'een zoekopdracht mislukte');
     stap(`Let op: ${reden}; het onderzoek gaat verder met wat er is gevonden`, 'waarschuwing');
   }
 }
@@ -217,7 +247,7 @@ async function start(casus) {
     const res = await fetch('/api/analyse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ casus }),
+      body: JSON.stringify({ casus, filters: gekozenFilters() }),
       signal: controller.signal,
     });
     if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
@@ -359,7 +389,7 @@ function toonResultaat(r) {
           ? 'uit het geheime archief'
           : r.modus === 'demo'
           ? `${r.controle.totaal} uit de gecontroleerde demodataset`
-          : `${r.controle.teruggevonden} van ${r.controle.totaal} teruggevonden in de zoekresultaten`)),
+          : `${r.controle.officieel ?? 0} van ${r.controle.totaal} rechtstreeks uit rechtspraak.nl of wetten.overheid.nl`)),
         el('ul', { class: 'bronnen' }, r.bronnen.map(bronKaart)),
       ),
     );
@@ -416,6 +446,12 @@ function bronKaart(b) {
       ? el('span', { class: 'label label--hart' }, 'Geheime bron')
       : b.herkomst === 'dataset'
       ? el('span', { class: 'label label--ok', title: 'Deze bron staat in de handmatig gecontroleerde dataset van de demomodus.' }, 'Gecontroleerde dataset')
+      : b.verificatie === 'gelezen'
+      ? el('span', { class: 'label label--ok', title: 'Claude heeft de officiële tekst van deze uitspraak via de open data van rechtspraak.nl gelezen.' }, 'Gelezen via rechtspraak.nl')
+      : b.verificatie === 'gevonden'
+      ? el('span', { class: 'label label--ok', title: 'Deze uitspraak kwam voor in de zoekresultaten van rechtspraak.nl, maar de volledige tekst is niet gelezen.' }, 'Gevonden op rechtspraak.nl')
+      : b.verificatie === 'wettekst'
+      ? el('span', { class: 'label label--ok', title: 'De actuele tekst van dit artikel is opgehaald van wetten.overheid.nl.' }, 'Wettekst van wetten.overheid.nl')
       : b.teruggevonden
       ? el('span', { class: 'label label--ok', title: 'De URL of het kenmerk kwam voor in de zoekresultaten van deze analyse.' }, 'Teruggevonden in zoekresultaten')
       : el('span', { class: 'label label--let-op', title: 'Deze bron kwam niet voor in de zoekresultaten. Mogelijk komt hij uit het geheugen van het model, of is hij verzonnen.' }, 'Niet teruggevonden: extra controleren'),
