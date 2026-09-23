@@ -29,7 +29,7 @@ const MODUS_TEKST = {
     badge: ['Demomodus', 'geen API, geen kosten'],
     voet: 'demomodus: vaste regels en een gecontroleerde dataset, geen AI',
     uitleg: 'Demomodus: de casus wordt vergeleken met een vaste, gecontroleerde dataset. Dit duurt een paar seconden.',
-    intro: 'In de demomodus gebeurt dat met vaste regels en een kleine, gecontroleerde dataset, zonder AI.',
+    intro: 'In de demomodus gebeurt dat met vaste regels en een gecontroleerde dataset, zonder AI. Hij kent AI-zaken en veelvoorkomende alledaagse zaken, zoals diefstal, verkeersongevallen, hondenbeten en kapotte aankopen.',
   },
   api: {
     badge: ['Live modus', 'Claude + web search'],

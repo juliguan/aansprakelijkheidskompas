@@ -9,7 +9,7 @@ De tool heeft twee modi:
 | Hoe | Vaste trefwoordregels en een gecontroleerde dataset van echte uitspraken en wetgeving | Claude (`claude-sonnet-5`) zoekt live naar rechtspraak en wetgeving |
 | Kosten | Gratis, geen API-sleutel nodig | API-tegoed, ongeveer €0,10 tot €0,25 per analyse |
 | Snelheid | Een paar seconden | 20 tot 60 seconden |
-| Casussen | Alleen de AI-thema's die de regels kennen | Elke casus, met uitleg op maat |
+| Casussen | AI-thema's en veelvoorkomende alledaagse zaken die de regels kennen | Elke casus, met uitleg op maat |
 | Bronnen | Handmatig gecontroleerd, altijd echt | Automatisch gecontroleerd tegen de zoekresultaten; kan fouten bevatten |
 
 > **Dit is geen juridisch advies.** De tool is bedoeld om te leren, te verkennen en het gesprek te starten, niet om beslissingen op te baseren. Lees de sectie [Beperkingen](#beperkingen).
@@ -72,9 +72,9 @@ Start daarna met `npm start`. Een commando (`npm run demo` of `npm run live`) ga
 
 ### Demomodus
 
-1. De tekst wordt vergeleken met **thema's** (onder meer werving en selectie, overheid, voertuigen, producten en software, kredietscores, platformwerk, gezichtsherkenning, zorg, privacy) en **signalen** (geen menselijke controle, geen uitleg, aanwijzingen voor discriminatie, concrete schade, een probleem na een update, enzovoort). Zie [`server/demo/regels.js`](server/demo/regels.js).
+1. De tekst wordt vergeleken met **thema's** en **signalen**. De AI-thema's zijn werving en selectie, overheid, zelfrijdende auto's, producten en software, kredietscores, platformwerk, gezichtsherkenning, zorg en privacy. De alledaagse thema's zijn (winkel)diefstal, verkeersongevallen, dieren, kinderen, buren, ongevallen op het werk, kapotte aankopen en vallen of struikelen. De signalen zijn (geen menselijke controle, geen uitleg, aanwijzingen voor discriminatie, concrete schade, een probleem na een update, enzovoort). Zie [`server/demo/regels.js`](server/demo/regels.js).
 2. De score is de basisscore van het belangrijkste thema plus of min het gewicht van de gevonden signalen.
-3. De bronnen komen uit [`server/demo/dataset.js`](server/demo/dataset.js): een handmatig gecontroleerde verzameling Nederlandse en Europese uitspraken (onder andere SyRI, de toeslagenaffaire, Uber/Ola, SCHUFA en Dun & Bradstreet) en de belangrijkste wetgeving. Elk ECLI-nummer is gecontroleerd via de open data van rechtspraak.nl of EUR-Lex.
+3. De bronnen komen uit [`server/demo/dataset.js`](server/demo/dataset.js): een handmatig gecontroleerde verzameling Nederlandse en Europese uitspraken (onder andere SyRI, de toeslagenaffaire, Uber/Ola, SCHUFA, Dun & Bradstreet, IZA/Vrerink en kantonrechteruitspraken over de vaste vergoeding bij winkeldiefstal) en de belangrijkste wetgeving. Elk ECLI-nummer is gecontroleerd via de open data van rechtspraak.nl of EUR-Lex.
 4. Beschrijft de tekst geen casus, of herkent de demo geen thema, dan geeft hij geen score maar aanvulvragen.
 
 ### Live modus
@@ -102,7 +102,7 @@ De score geeft aan hoe sterk de juridische basis is om ten minste één partij a
 npm run check
 ```
 
-Dit draait de drie testscenario's en twee randgevallen door de demomodus en controleert status en score. Er is geen API-sleutel voor nodig. Hoe je de live modus test, staat in [testscenarios.md](testscenarios.md).
+Dit draait de testscenario's (drie AI-casussen, drie alledaagse casussen en de randgevallen) door de demomodus en controleert status en score. Er is geen API-sleutel voor nodig. Hoe je de live modus test, staat in [testscenarios.md](testscenarios.md).
 
 ## Demo als losse pagina
 

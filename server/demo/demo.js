@@ -91,6 +91,7 @@ function kiesBronnen(themas, signalen, tekst) {
     ...(signalen.some((s) => s.id === 'discriminatie') ? ['discriminatie'] : []),
     ...(signalen.some((s) => s.id === 'geen-uitleg' || s.id === 'geen-mens') ? ['transparantie'] : []),
     ...(signalen.some((s) => s.id === 'update') ? ['software'] : []),
+    ...(/gewond|letsel|gebeten|gebroken|hersenschudding|ziekenhuis/.test(tekst) ? ['letsel'] : []),
     ...(AI_AANWIJZINGEN.test(tekst) ? ['algemeen-ai'] : []),
   ];
 
@@ -124,7 +125,7 @@ function kiesBronnen(themas, signalen, tekst) {
 
 function maakSamenvatting(themas) {
   if (!themas.length) {
-    return 'De casus past niet in een van de AI-thema\'s die de demomodus kent. De inschatting rust daarom alleen op de algemene regels voor onrechtmatige daad (art. 6:162 BW).';
+    return 'De casus past niet in een van de thema\'s die de demomodus kent. De inschatting rust daarom alleen op de algemene regels voor onrechtmatige daad (art. 6:162 BW).';
   }
   return themas[0].samenvatting;
 }
@@ -169,16 +170,18 @@ function maakPartijen(themas, score) {
 function maakVervolgvragen(tekst) {
   const vragen = [];
   if (!/\b(19|20)\d{2}\b/.test(tekst)) vragen.push('Wanneer gebeurde het? Dat bepaalt welke regels (bijvoorbeeld de AI-verordening of de nieuwe productaansprakelijkheidsregels) van toepassing waren.');
-  if (!/\bmens|medewerker|handmatig|recruiter|ambtenaar/.test(tekst)) vragen.push('Keek er een mens mee bij de beslissing, en zo ja: kon die persoon de uitkomst echt veranderen?');
-  if (!/schade|kosten|inkomen|letsel|gewond|schuld|verlies/.test(tekst)) vragen.push('Welke schade is er precies ontstaan (financieel, letsel, of immaterieel zoals stress of reputatieschade)?');
-  if (!/leverancier|fabrikant|ontwikkel|aanbieder|bedrijf|gemeente|werkgever/.test(tekst)) vragen.push('Wie heeft het systeem gemaakt en wie gebruikte het?');
+  const gaatOverAi = AI_AANWIJZINGEN.test(tekst);
+  if (gaatOverAi && !/\bmens|medewerker|handmatig|recruiter|ambtenaar/.test(tekst)) vragen.push('Keek er een mens mee bij de beslissing, en zo ja: kon die persoon de uitkomst echt veranderen?');
+  if (!/schade|kosten|inkomen|letsel|gewond|schuld|verlies|€|euro|bedrag/.test(tekst)) vragen.push('Welke schade is er precies ontstaan, of welk bedrag wordt er van je gevraagd?');
+  if (gaatOverAi && !/leverancier|fabrikant|ontwikkel|aanbieder|bedrijf|gemeente|werkgever/.test(tekst)) vragen.push('Wie heeft het systeem gemaakt en wie gebruikte het?');
+  if (!gaatOverAi && !/\b(ik|mijn|wij|we)\b/.test(tekst)) vragen.push('Wat is jouw rol: ben je de benadeelde, degene die wordt aangesproken, of een buitenstaander?');
   return vragen;
 }
 
 const GEEN_CASUS_TEKST =
   'De tekst beschrijft geen situatie waarin iemand schade lijdt of waarin een aansprakelijkheidsvraag speelt, dus er valt niets te beoordelen.';
 const TE_VAAG_TEKST =
-  'De demomodus herkent geen van zijn AI-thema\'s in deze korte beschrijving. De demo werkt alleen met vaste trefwoorden; beschrijf de situatie uitgebreider, of gebruik de live modus, die ook andere soorten casussen kan beoordelen.';
+  'De demomodus herkent geen van zijn thema\'s in deze korte beschrijving. De demo werkt met vaste trefwoorden; beschrijf wie wat deed en welke schade er is, of gebruik de live modus, die elke soort casus kan beoordelen.';
 
 function geenOordeel(status, toelichting, meta) {
   return {

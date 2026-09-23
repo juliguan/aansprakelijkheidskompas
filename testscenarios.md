@@ -2,7 +2,18 @@
 
 Gebruik deze scenario's om de tool na elke wijziging (aan de prompt, het model of de frontend) te controleren. De drie hoofdscenario's zijn in de interface te laden met de knoppen "Voorbeeld laden".
 
-**Demomodus:** `npm run check` controleert alle scenario's hieronder automatisch (verwacht: sollicitatie ongeveer 73, fraude-algoritme ongeveer 76, zelfrijdende auto ongeveer 67, en de juiste status bij de randgevallen). De rest van dit document gaat over het handmatig testen van de **live modus**.
+**Demomodus:** `npm run check` controleert de scenario's automatisch. Verwachte scores:
+
+| Scenario | Score |
+|---|---|
+| Sollicitatie | ongeveer 73 |
+| Fraude-algoritme | ongeveer 76 |
+| Zelfrijdende auto | ongeveer 67 |
+| Winkeldiefstal | ongeveer 82 |
+| Hondenbeet | ongeveer 75 |
+| Aangereden fietser | ongeveer 60 |
+
+Bij de randgevallen controleert het script alleen de status. De rest van dit document gaat over het handmatig testen van de **live modus**.
 
 Scores zijn **richtwaarden**. Een taalmodel geeft niet elke keer exact hetzelfde antwoord, dus kijk vooral of de redenering klopt en of de bronnen echt bestaan. Controleer bij elke run minimaal twee bronnen handmatig via de links "Controleer op rechtspraak.nl" of "Zoek op EUR-Lex".
 
@@ -53,7 +64,7 @@ Scores zijn **richtwaarden**. Een taalmodel geeft niet elke keer exact hetzelfde
 | Invoer | Verwachte toestand |
 |---|---|
 | `ik ben niks aan het doen` | Status `geen_casus`: grijze wijzer, melding "Dit lijkt geen casus", suggesties wat je kunt beschrijven. Er wordt niet gezocht. |
-| `ik ga stelen van de albert heijn` | Status `ok`: gewoon een analyse (strafbaarheid, civiele aansprakelijkheid tegenover de winkel). Het model vermeldt dat de tool vooral voor AI-schade bedoeld is. |
+| `ik heb 10 croissantjes gestolen bij de appie en ze hebben me gepakt` | Status `ok`, in beide modi: de dader is aansprakelijk; de winkel mag de schade plus redelijke kosten vragen (vaste vergoeding €242 sinds 14 september 2026), en diefstal is daarnaast strafbaar. |
 | `een algoritme deed iets fout` | Status `te_vaag`, of `ok` met een voorzichtige score en veel vervolgvragen. |
 | Leeg veld | De browser toont direct "Beschrijf eerst wat er is gebeurd". Er wordt geen verzoek verstuurd. |
 | Geen of een ongeldige API-sleutel in `.env` | Foutkaart "API-sleutel ontbreekt" of "API-sleutel geweigerd", zonder knop "Opnieuw proberen". |

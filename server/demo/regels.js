@@ -36,8 +36,9 @@ export const THEMAS = [
   },
   {
     id: 'voertuig',
-    label: 'voertuigen en rijhulpsystemen',
-    patroon: /\bauto\b|auto's|personenauto|voertuig|rijhulp|rijsysteem|zelfrijd|autonoom|autopilot|tesla|snelweg|aanrijding|botsing|remt\b|remde|remming|achterligger|bestuurder/,
+    label: 'zelfrijdende auto\'s en rijhulpsystemen',
+    // Only automated driving; ordinary traffic accidents fall under the "verkeer" theme.
+    patroon: /rijhulp|rijsysteem|zelfrijd|autonoom|autopilot|\btesla\b|adaptive cruise|lane assist|spookrem|phantom brak|automatisch (remmen|sturen|geremd)/,
     basis: 50,
     samenvatting: 'Bij een ongeluk met een (deels) zelfrijdende auto is er bijna altijd een aansprakelijke partij voor de benadeelde, maar de verdeling tussen bestuurder, verzekeraar en fabrikant is lastig.',
     uitleg: 'De persoon achter het stuur blijft volgens de rechtspraak de bestuurder, ook met Autopilot aan (Rechtbank Midden-Nederland, 2018), en elke auto is verplicht verzekerd (WAM), zodat de benadeelde de verzekeraar kan aanspreken. Art. 185 WVW beschermt voetgangers en fietsers, maar geldt niet tussen twee motorrijtuigen; dan beslist art. 6:162 BW. Ligt de oorzaak in de software, dan kan de fabrikant via productaansprakelijkheid (art. 6:185 e.v. BW) worden aangesproken, bijvoorbeeld door de verzekeraar in regres.',
@@ -130,6 +131,114 @@ export const THEMAS = [
       { partij: 'Verwerkingsverantwoordelijke', rol: 'verwerkingsverantwoordelijke', grondslag: 'art. 82 AVG', sterk: true },
     ],
     onzekerheden: ['Welke concrete schade is ontstaan; zonder schade geen vergoeding.'],
+  },
+
+  // ── Everyday liability (not AI-specific) ──────────────────────────
+  {
+    id: 'diefstal',
+    label: 'diefstal en winkeldiefstal',
+    patroon: /stelen|\bsteel\b|\bstal\b|gestolen|diefstal|winkeldief|jatten|gejat|zonder te betalen|niet (af)?gerekend|niet gescand|betrapt|\bsoda\b/,
+    basis: 82,
+    samenvatting: 'Wie iets steelt, is aansprakelijk voor de schade van de winkel of eigenaar. Een winkel mag de spullen of hun waarde terugvragen plus redelijke kosten; daarvoor geldt sinds 14 september 2026 vaak een vaste vergoeding van €242 per diefstal (daarvoor €181).',
+    uitleg: 'Diefstal is een onrechtmatige daad (art. 6:162 BW), dus de dader moet de schade vergoeden. Naast de waarde van de spullen (als die niet onbeschadigd terugkomen) mag de winkel redelijke kosten rekenen (art. 6:96 BW). Winkeliers gebruiken daarvoor een vaste schadevergoeding, vaak geïnd via de incassostichting SODA: €181 sinds 2012, €242 vanaf 14 september 2026. Kantonrechters wijzen dat bedrag regelmatig toe (Rechtbank Zeeland-West-Brabant, 2022), maar niet altijd: soms alleen de werkelijk aangetoonde schade (Rechtbank Midden-Nederland, 2023) of niets als de schade niet is onderbouwd (Rechtbank Den Haag, 2023). Los daarvan is diefstal strafbaar (art. 310 Sr); een strafrechtelijke boete staat los van de schadevergoeding aan de winkel.',
+    partijen: [
+      { partij: 'Degene die heeft gestolen', rol: 'dader', grondslag: 'art. 6:162 BW; art. 6:96 BW (redelijke kosten)', sterk: true },
+    ],
+    onzekerheden: [
+      'Of de spullen onbeschadigd zijn teruggegeven of betaald; dan is er minder schade.',
+      'Of de winkel de hoogte van de gevraagde vergoeding kan onderbouwen als je die betwist.',
+      'Hoe oud de dader is: voor kinderen onder de 14 zijn de ouders aansprakelijk (art. 6:169 BW).',
+    ],
+  },
+  {
+    id: 'verkeer',
+    label: 'verkeersongevallen met fietsers en voetgangers',
+    patroon: /\bfiets|fietser|voetganger|scooter|brommer|zebrapad|overstek|aangereden|aanrijding|kruispunt|voorrang/,
+    basis: 60,
+    samenvatting: 'Fietsers en voetgangers staan sterk bij een aanrijding met een auto: de automobilist (en diens verzekeraar) is bijna altijd voor minstens de helft aansprakelijk.',
+    uitleg: 'Bij een aanrijding tussen een motorrijtuig en een fietser of voetganger is de eigenaar of houder van het motorrijtuig aansprakelijk, tenzij er sprake is van overmacht (art. 185 WVW). Volgens de Hoge Raad krijgt een fietser of voetganger van 14 jaar of ouder in beginsel minstens 50% van de schade vergoed, ook bij eigen schuld (IZA/Vrerink, 1992); voor kinderen onder de 14 geldt in de rechtspraak een 100%-regel. De verzekeraar van het motorrijtuig kan rechtstreeks worden aangesproken (WAM). Tussen twee fietsers of twee auto\'s onderling geldt art. 6:162 BW: wie de verkeersfout maakte, is aansprakelijk.',
+    partijen: [
+      { partij: 'Bestuurder of eigenaar van het motorrijtuig en diens verzekeraar', rol: 'automobilist / WAM-verzekeraar', grondslag: 'art. 185 WVW; WAM', sterk: true },
+      { partij: 'Andere weggebruiker die een verkeersfout maakte', rol: 'weggebruiker', grondslag: 'art. 6:162 BW', sterk: false },
+    ],
+    onzekerheden: [
+      'Of er een motorrijtuig bij betrokken was; zo niet, dan geldt de gewone schuldvraag.',
+      'Of er sprake was van overmacht aan de kant van de automobilist.',
+    ],
+  },
+  {
+    id: 'dieren',
+    label: 'schade door dieren',
+    patroon: /\bhond|\bkat\b|\bpaard|gebeten|\bbeet\b|huisdier|\bdier\b|losgebroken/,
+    basis: 72,
+    samenvatting: 'De eigenaar van een dier is aansprakelijk voor de schade die het dier aanricht, ook als de eigenaar zelf niets verkeerd deed.',
+    uitleg: 'Voor dieren geldt een risicoaansprakelijkheid: de bezitter van het dier is aansprakelijk voor de schade die het aanricht (art. 6:179 BW), zonder dat je hoeft te bewijzen dat de eigenaar iets fout deed. Heb je zelf bijgedragen aan de schade, bijvoorbeeld door een hond uit te dagen, dan kan de vergoeding worden verminderd (eigen schuld, art. 6:101 BW). Bij letsel kan ook smartengeld worden gevraagd (art. 6:106 BW).',
+    partijen: [
+      { partij: 'Eigenaar (bezitter) van het dier', rol: 'bezitter', grondslag: 'art. 6:179 BW; meestal gedekt door diens aansprakelijkheidsverzekering', sterk: true },
+    ],
+    onzekerheden: ['Of je zelf iets deed waardoor het dier reageerde (eigen schuld).'],
+  },
+  {
+    id: 'kinderen',
+    label: 'schade door kinderen',
+    patroon: /mijn (zoon|dochter)|zoontje|dochtertje|\bkind(je|eren)?\b|minderjarig|\b([5-9]|1[0-5]) jaar oud|\b([5-9]|1[0-5])-?jarige?\b/,
+    basis: 55,
+    samenvatting: 'Voor schade door een kind onder de 14 zijn de ouders aansprakelijk; bij 14- en 15-jarigen meestal ook, en vanaf 16 jaar het kind zelf.',
+    uitleg: 'Ouders zijn aansprakelijk voor een onrechtmatige gedraging van hun kind onder de 14 jaar (art. 6:169 lid 1 BW). Bij kinderen van 14 en 15 jaar zijn ouders aansprakelijk, tenzij hun niet kan worden verweten dat ze de gedraging niet hebben voorkomen (lid 2). Vanaf 16 jaar is het kind zelf aansprakelijk. In de praktijk dekt de aansprakelijkheidsverzekering van de ouders dit vaak.',
+    partijen: [
+      { partij: 'Ouders of verzorgers', rol: 'ouders', grondslag: 'art. 6:169 BW', sterk: true },
+      { partij: 'Het kind zelf (vanaf 14 of 16 jaar)', rol: 'dader', grondslag: 'art. 6:162 BW', sterk: false },
+    ],
+    onzekerheden: ['De precieze leeftijd van het kind: die bepaalt wie aansprakelijk is.'],
+  },
+  {
+    id: 'buren',
+    label: 'burenoverlast en burenruzies',
+    patroon: /\bburen\b|buurman|buurvrouw|overlast|lawaai|herrie|schutting|\bheg\b|overhangende|boom van/,
+    basis: 45,
+    samenvatting: 'Buren mogen elkaar geen onrechtmatige hinder bezorgen, maar niet elke ergernis is onrechtmatig: het hangt af van ernst, duur en omstandigheden.',
+    uitleg: 'Het Burgerlijk Wetboek verbiedt onrechtmatige hinder tussen buren, zoals overmatig geluid, stank of rook (art. 5:37 BW). Of hinder onrechtmatig is, hangt af van de aard, ernst en duur ervan en van wat in de buurt gebruikelijk is. Gaat het om schade, bijvoorbeeld een omgevallen boom of lekkage, dan geldt art. 6:162 BW en soms de aansprakelijkheid voor opstallen (art. 6:174 BW). Bij overlast is bemiddeling (buurtbemiddeling) vaak de eerste stap.',
+    partijen: [
+      { partij: 'Buren of andere veroorzaker van de hinder', rol: 'veroorzaker', grondslag: 'art. 5:37 BW; art. 6:162 BW', sterk: false },
+    ],
+    onzekerheden: ['Hoe ernstig en langdurig de hinder is, en of die is vastgelegd (logboek, getuigen).'],
+  },
+  {
+    id: 'werkongeval',
+    label: 'ongevallen op het werk',
+    patroon: /arbeidsongeval|bedrijfsongeval|tijdens (het|mijn) werk|op (het|mijn) werk|\bladder\b|steiger|werkplek/,
+    basis: 65,
+    samenvatting: 'Bij een ongeval op het werk is de werkgever in beginsel aansprakelijk, tenzij hij aantoont dat hij genoeg voor je veiligheid heeft gedaan.',
+    uitleg: 'De werkgever heeft een zorgplicht voor een veilige werkplek (art. 7:658 BW). Raak je tijdens je werk gewond, dan hoef je alleen te laten zien dat de schade in de uitoefening van je werk is ontstaan; daarna moet de werkgever aantonen dat hij zijn zorgplicht is nagekomen. Alleen bij opzet of bewuste roekeloosheid van de werknemer vervalt de aansprakelijkheid. Bij letsel kan ook smartengeld worden gevraagd (art. 6:106 BW).',
+    partijen: [
+      { partij: 'Werkgever', rol: 'werkgever', grondslag: 'art. 7:658 BW', sterk: true },
+    ],
+    onzekerheden: ['Of de werkgever voldoende instructies, toezicht en veilige middelen bood.'],
+  },
+  {
+    id: 'koop',
+    label: 'kapotte of verkeerde aankopen',
+    patroon: /gekocht|aankoop|webshop|bestelling|besteld|garantie|retour|niet geleverd|kapot (na|binnen)|verkoper/,
+    basis: 55,
+    samenvatting: 'Een gekocht product moet doen wat je mag verwachten. Is het binnen een jaar kapot, dan moet de verkoper in de regel herstellen, vervangen of geld teruggeven.',
+    uitleg: 'Bij koop moet het product "conform" zijn: het moet de eigenschappen hebben die je mag verwachten (art. 7:17 BW). Bij consumentenkoop wordt vermoed dat een gebrek dat binnen een jaar na aflevering opduikt, er al vanaf het begin was (art. 7:18 BW). Je spreekt dan de verkoper aan, niet de fabrikant. Veroorzaakt een gebrekkig product letsel of schade aan andere spullen, dan kan de fabrikant aansprakelijk zijn via productaansprakelijkheid (art. 6:185 BW).',
+    partijen: [
+      { partij: 'Verkoper of webshop', rol: 'verkoper', grondslag: 'art. 7:17-7:18 BW', sterk: true },
+      { partij: 'Fabrikant (bij letsel of schade aan andere spullen)', rol: 'producent', grondslag: 'art. 6:185 BW', sterk: false },
+    ],
+    onzekerheden: ['Of het gebrek door normaal gebruik ontstond of door verkeerd gebruik.'],
+  },
+  {
+    id: 'opstal',
+    label: 'vallen, struikelen en gebrekkige gebouwen of wegen',
+    patroon: /stoeptegel|\bstoep\b|losliggende|gat in de (weg|stoep)|\bkuil\b|gestruikeld|uitgegleden|balkon|dakpan|plafond|\btrap\b/,
+    basis: 55,
+    samenvatting: 'Wie over een gebrekkige stoep of trap valt, kan de beheerder of eigenaar aanspreken, maar alleen als de situatie echt gevaarlijk was.',
+    uitleg: 'De bezitter van een gebouw of bouwwerk, en de beheerder van een weg of stoep (vaak de gemeente), is aansprakelijk als dat niet voldoet aan de eisen die men mag stellen en daardoor gevaar oplevert (art. 6:174 BW). Niet elke oneffenheid is een gebrek: het gaat om wat je redelijkerwijs mag verwachten op die plek, en je moet zelf ook opletten (eigen schuld, art. 6:101 BW).',
+    partijen: [
+      { partij: 'Wegbeheerder (vaak de gemeente) of eigenaar van het gebouw', rol: 'bezitter / beheerder', grondslag: 'art. 6:174 BW', sterk: false },
+    ],
+    onzekerheden: ['Hoe groot en zichtbaar het gebrek was, en hoe lang het er al was.'],
   },
 ];
 
